@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>JavaScript サンプル: 位置情報の取得 + 逆ジオコーディング</title>
+
+</head>
+
+<body>
+    <h1>JavaScript サンプル: 位置情報の取得 + 逆ジオコーディング</h1>
+    <p>Geolocation API を使用して位置情報を取得し、<a href="https://wiki.openstreetmap.org/wiki/JA:Nominatim">OpenStreetMap の
+            Nominatim</a> を使用して逆ジオコーディング (位置情報から住所取得) を行います。</p>
+
+    <button id="geo-button">位置情報の取得</button>
+
+    <h2>結果</h2>
+    <pre id="geo-result"></pre>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.1/es6-promise.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.4/fetch.min.js"></script>
+    <script>
+        (function () {
+            const button = document.getElementById('geo-button');
+            const result = document.getElementById('geo-result');
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            };
+            // 位置情報取得成功
+            const success = function (position) {
+                const coords = position.coords;
+                let text = '';
+                text += '位置　 : ' + coords.latitude + ', ' + coords.longitude + '\n';
+                text += '緯度　 : ' + coords.latitude + '\n';
+                text += '経度　 : ' + coords.longitude + '\n';
+                text += '正確性 : ' + coords.accuracy + '\n';
+                text += '住所　 : ';
+                result.innerHTML = text;
+                reverseGeocoding(position);
+            };
+            // 位置情報取得失敗
+            const error = function (err) {
+                const messageMap = {
+                    1: '位置情報の取得が許可されませんでした。',
+                    2: '位置情報の取得に失敗しました。',
+                    3: '位置情報の取得に失敗しました。(タイムアウト)'
+                }
+                result.textContent = messageMap[err.code];
+            };
+            // 逆ジオコーディング
+            const reverseGeocoding = function (position) {
+                const coords = position.coords;
+                const url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + coords.latitude + '&lon=' + coords.longitude;
+                fetch(url)
+                    .then(function (res) { return res.json() })
+                    .then(function (json) {
+                        let text = json.display_name + '\n';
+                        text += 'JSON　 : ' + JSON.stringify(json, null, '    ');
+                        result.innerHTML += text;
+                    })
+                    .catch(function (err) {
+                        result.innerHTML += '取得に失敗しました。';
+                    });
+            };
+            button.addEventListener('click', function () {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(success, error, options);
+                }
+                else {
+                    result.textContent = 'この端末では位置情報が取得できません。';
+                }
+            });
+        })();
+    </script>
+</body>
+
+</html>
